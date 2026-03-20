@@ -74,8 +74,10 @@ public class ActivoController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENISTA')")
-    public ResponseEntity<Void> deleteActivo(@PathVariable Long id) {
-        activoService.deleteActivo(id);
+    public ResponseEntity<Void> deleteActivo(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "Sin motivo especificado") String motivo) {
+        activoService.deleteActivo(id, motivo);
         return ResponseEntity.noContent().build();
     }
 

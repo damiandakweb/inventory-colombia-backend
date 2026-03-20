@@ -139,8 +139,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
             Activo activoNuevo = activoRepository.findById(request.getIdActivoNuevo())
                     .orElseThrow(() -> new RuntimeException("Activo de reemplazo no encontrado"));
 
-            Ubicacion ubicacionBodega = ubicacionRepository.findById(1L)
-                    .orElseThrow(() -> new RuntimeException("Ubicación 'Bodega' no encontrada"));
+            Ubicacion ubicacionBodega = getUbicacionByNombre("Bodega");
 
             Activo activoViejo = null;
 
@@ -156,16 +155,13 @@ public class SolicitudServiceImpl  implements  SolicitudService {
 
                 // CASO 1: La solicitud es por un equipo dañado o con fallos.
                 if (tipoSolicitud.contains("DAÑO") || tipoSolicitud.contains("FALLO")) {
-                    // Asignamos el estado "Dañado" (asumiendo ID 3)
-                    estadoParaActivoViejo = estadoRepository.findById(3L)
-                            .orElseThrow(() -> new RuntimeException("Estado 'Dañado' (ID 3) no encontrado"));
+                    estadoParaActivoViejo = getEstadoByNombre("Dañado");
                     tipoMovimientoDevolucion = "Devolución por Daño/Fallo";
                 }
                 // CASO 2: La solicitud es para enviar a mantenimiento.
                 else if (tipoSolicitud.contains("MANTENIMIENTO")) {
                     // Asignamos el estado "En Mantenimiento" (asumiendo ID 4)
-                    estadoParaActivoViejo = estadoRepository.findById(4L)
-                            .orElseThrow(() -> new RuntimeException("Estado 'En mantenimiento' (ID 4) no encontrado"));
+                    estadoParaActivoViejo = getEstadoByNombre("Mantenimiento");
                     tipoMovimientoDevolucion = "Devolución para Mantenimiento";
                 }
                 // CASO 3 (Por defecto): Cualquier otra devolución (ej. fin de contrato, etc.)
@@ -191,8 +187,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
             }
 
             // 3. Procesamos el ACTIVO NUEVO (sin cambios)
-            Estado estadoEnUso = estadoRepository.findById(2L)
-                    .orElseThrow(() -> new RuntimeException("Estado 'En uso' no encontrado"));
+            Estado estadoEnUso = getEstadoByNombre("En uso");
             activoNuevo.setEstado(estadoEnUso);
             activoNuevo.setUsuarioActual(usuario);
 
@@ -227,12 +222,9 @@ public class SolicitudServiceImpl  implements  SolicitudService {
         Activo activoNuevo = activoRepository.findById(request.getIdActivoNuevo())
                 .orElseThrow(() -> new RuntimeException("Activo de reemplazo no encontrado"));
 
-        // Buscamos los estados que vamos a necesitar
-        Estado estadoEnUso = estadoRepository.findById(2L).orElseThrow(() -> new RuntimeException("Estado 'En uso' no encontrado"));
-        Estado estadoEnBodega = estadoRepository.findById(1L).orElseThrow(() -> new RuntimeException("Estado 'Disponible/Nuevo' no encontrado"));
-
-        // Asumimos que la ubicación de Bodega/Taller tiene el ID 1
-        Ubicacion ubicacionBodega = ubicacionRepository.findById(1L).orElseThrow(() -> new RuntimeException("Ubicación 'Bodega' no encontrada"));
+        Estado estadoEnUso = getEstadoByNombre("En uso");
+        Estado estadoEnBodega = getEstadoByNombre("Nuevo");
+        Ubicacion ubicacionBodega = getUbicacionByNombre("Bodega");
 
         Activo activoViejo = null;
 
@@ -407,8 +399,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
 
 
         // 3. Buscamos el estado "En mantenimiento" (asumiendo que su ID es 4)
-        Estado estadoMantenimiento = estadoRepository.findById(4L)
-                .orElseThrow(() -> new RuntimeException("Estado 'En mantenimiento' no encontrado"));
+        Estado estadoMantenimiento = getEstadoByNombre("Mantenimiento");
 
         // 4. Actualizamos el activo: lo ponemos en mantenimiento y lo desasignamos
         activo.setEstado(estadoMantenimiento);
@@ -422,8 +413,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
         movimiento.setUsuario(solicitud.getUsuario());
 
         // Asumimos que la ubicación para mantenimiento tiene el ID 2
-        Ubicacion ubicacionMantenimiento = ubicacionRepository.findById(2L)
-                .orElseThrow(() -> new RuntimeException("Ubicación de mantenimiento no encontrada"));
+        Ubicacion ubicacionMantenimiento = getUbicacionByNombre("Mantenimiento");
         movimiento.setUbicacion(ubicacionMantenimiento);
 
         movimientoRepository.save(movimiento);
@@ -449,7 +439,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
         }
 
         // Actualizar el activo
-        Estado estadoDisponible = estadoRepository.findById(6L).orElseThrow(() -> new RuntimeException("Estado 'Disponible' no encontrado"));
+        Estado estadoDisponible = getEstadoByNombre("En bodega");
         activoADevolver.setUsuarioActual(null); // Desasignar
         activoADevolver.setEstado(estadoDisponible); // Poner en bodega
 
@@ -459,7 +449,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
         movDevolucion.setFechaMovimiento(LocalDate.now());
         movDevolucion.setActivo(activoADevolver);
         movDevolucion.setUsuario(solicitud.getUsuario());
-        movDevolucion.setUbicacion(ubicacionRepository.findById(1L).get()); // A Bodega
+        movDevolucion.setUbicacion(getUbicacionByNombre("Bodega"));
         movDevolucion.setObservacion(request.getObservacion());
         movimientoRepository.save(movDevolucion);
 
@@ -469,4 +459,27 @@ public class SolicitudServiceImpl  implements  SolicitudService {
         solicitudRepository.save(solicitud);
     }
 
+    @Override
+    @Transactional
+    public void rechazarSolicitud(Long solicitudId, String motivo) {
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+
+        if (!solicitud.getEstadoSolicitud().equals("Nuevo")) {
+            throw new IllegalStateException("Solo se pueden rechazar solicitudes en estado 'Nuevo'.");
+        }
+
+        solicitud.setEstadoSolicitud("Rechazado");
+        solicitudRepository.save(solicitud);
+    }
+
+    private Estado getEstadoByNombre(String nombre) {
+        return estadoRepository.findByNombreEstado(nombre)
+                .orElseThrow(() -> new RuntimeException("Estado '" + nombre + "' no encontrado en la BD."));
+    }
+
+    private Ubicacion getUbicacionByNombre(String nombre) {
+        return ubicacionRepository.findByNombreUbicacion(nombre)
+                .orElseThrow(() -> new RuntimeException("Ubicación '" + nombre + "' no encontrada en la BD."));
+    }
 }

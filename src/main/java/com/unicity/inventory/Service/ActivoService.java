@@ -17,7 +17,7 @@ public interface ActivoService {
     Optional<ActivoDto> updateActivo(Long id, ActivoDto activoDto);
 
     // Maneja la baja lógica del activo
-    void deleteActivo(Long id);
+    void deleteActivo(Long id, String motivo);
 
     List<ActivoDto> findActivoByUsuarioAndCategoria(Long usuarioId, Long categoriaId);
     List<ActivoDto> findDisponiblesByCategoria(Long categoriaId);

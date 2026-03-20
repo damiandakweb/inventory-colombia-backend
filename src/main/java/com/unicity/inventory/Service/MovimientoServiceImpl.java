@@ -51,71 +51,91 @@ public class MovimientoServiceImpl implements MovimientoService {
 
         switch (tipoMovimiento) {
             case "INGRESO":
-                // La lógica de ingreso puede permanecer simple
-                estadoNuevo = estadoRepository.findById(1L) // Estado: Disponible
-                        .orElseThrow(() -> new RuntimeException("Estado 'Disponible' no encontrado"));
+                estadoNuevo = estadoRepository.findByNombreEstado("Nuevo")
+                        .orElseThrow(() -> new RuntimeException("Estado 'Nuevo' no encontrado"));
                 activo.setUsuarioActual(null);
                 break;
 
             case "DEVOLUCION DE EQUIPO":
-                // --- 👇 INICIO DE LA LÓGICA INTELIGENTE ---
+                boolean esBodega = ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega");
+                boolean esSistema = usuario.getIdUsuario().equals(99L);
+                String estadoActualNombre = activo.getEstado().getNombreEstado().toUpperCase();
 
-                // Validación 1: ¿El activo está asignado a ALGUIEN?
-                if (activo.getUsuarioActual() == null) {
-                    throw new IllegalStateException("Error: El activo '" + activo.getEtiquetaInventario() + "' ya se encuentra en bodega y no puede ser devuelto.");
+                if (esBodega) {
+                    // FLUJO A: Devolución real → activo va a bodega
+                    // Validación: si ya está en bodega no tiene sentido
+                    if (estadoActualNombre.contains("BODEGA") && activo.getUsuarioActual() == null) {
+                        throw new IllegalStateException("El activo '" + activo.getEtiquetaInventario() + "' ya está en bodega.");
+                    }
+                    // Validación: solo el dueño o Sistema puede devolver
+                    if (!esSistema && activo.getUsuarioActual() != null &&
+                            !activo.getUsuarioActual().getIdUsuario().equals(usuario.getIdUsuario())) {
+                        throw new SecurityException("El activo pertenece a '" +
+                                activo.getUsuarioActual().getNombre() + "', no a '" + usuario.getNombre() + "'.");
+                    }
+                    estadoNuevo = estadoRepository.findByNombreEstado("En bodega")
+                            .orElseThrow(() -> new RuntimeException("Estado 'En bodega' no encontrado"));
+                    activo.setUsuarioActual(null);
+
+                } else {
+                    // FLUJO B: Entrega/regreso → activo sale de bodega o mantenimiento hacia un usuario
+                    // Validación: el activo debe estar disponible (bodega, mantenimiento, dañado en bodega)
+                    boolean estaDisponible = estadoActualNombre.contains("BODEGA") ||
+                            estadoActualNombre.contains("MANTENIMIENTO") ||
+                            estadoActualNombre.contains("NUEVO");
+                    if (!estaDisponible) {
+                        throw new IllegalStateException("El activo '" + activo.getEtiquetaInventario() +
+                                "' está en estado '" + activo.getEstado().getNombreEstado() +
+                                "'. Solo se pueden entregar activos en bodega o mantenimiento.");
+                    }
+                    estadoNuevo = estadoRepository.findByNombreEstado("En uso")
+                            .orElseThrow(() -> new RuntimeException("Estado 'En uso' no encontrado"));
+                    activo.setUsuarioActual(usuario);
                 }
-
-                // Validación 2: ¿El activo pertenece al usuario que intenta devolverlo?
-                if (!activo.getUsuarioActual().getIdUsuario().equals(usuario.getIdUsuario())) {
-                    throw new SecurityException("Error de asignación: El activo '" + activo.getEtiquetaInventario() + "' pertenece a '" + activo.getUsuarioActual().getNombre() + "', no a '" + usuario.getNombre() + "'.");
-                }
-
-                // Validación 3 (Opcional pero recomendada): ¿El activo está 'En Uso'?
-                // Asumiendo que el ID 2L es 'En Uso'.
-                if (activo.getEstado().getIdEstado() != 2L) {
-                    throw new IllegalStateException("Error: Solo se pueden devolver activos que estén 'En Uso'. Estado actual: " + activo.getEstado().getNombreEstado());
-                }
-
-                // Si todas las validaciones pasan, procedemos.
-                estadoNuevo = estadoRepository.findById(1L) // Estado: Disponible
-                        .orElseThrow(() -> new RuntimeException("Estado 'Disponible' no encontrado"));
-                activo.setUsuarioActual(null); // Desasignamos el activo del usuario
-
-                // --- FIN DE LA LÓGICA INTELIGENTE ---
                 break;
-
             case "ASIGNACION":
             case "CAMBIO POR DAÑO":
             case "CAMBIO POR FALLO":
             case "SOLICITUD DE EQUIPO NUEVO":
-                // Validación: No se puede asignar un activo que ya está en uso por otra persona.
-                if (activo.getUsuarioActual() != null && !activo.getUsuarioActual().getIdUsuario().equals(usuario.getIdUsuario())) {
-                    throw new IllegalStateException("Error: El activo '" + activo.getEtiquetaInventario() + "' ya está asignado a " + activo.getUsuarioActual().getNombre() + ".");
+                if (activo.getUsuarioActual() != null &&
+                        !activo.getUsuarioActual().getIdUsuario().equals(usuario.getIdUsuario())) {
+                    Movimiento movDevolucionAuto = new Movimiento();
+                    movDevolucionAuto.setTipoDeMovimiento("Devolución Automática");
+                    movDevolucionAuto.setFechaMovimiento(LocalDate.now());
+                    movDevolucionAuto.setActivo(activo);
+                    movDevolucionAuto.setUsuario(activo.getUsuarioActual());
+                    movDevolucionAuto.setUbicacion(ubicacion);
+                    movDevolucionAuto.setObservacion("Devolución automática generada al reasignar el activo.");
+                    movimientoRepository.save(movDevolucionAuto);
                 }
-                estadoNuevo = estadoRepository.findById(2L) // Estado: En uso
+                // La ubicación determina el estado
+                estadoNuevo = ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega")
+                        ? estadoRepository.findByNombreEstado("En bodega")
+                        .orElseThrow(() -> new RuntimeException("Estado 'En bodega' no encontrado"))
+                        : estadoRepository.findByNombreEstado("En uso")
                         .orElseThrow(() -> new RuntimeException("Estado 'En uso' no encontrado"));
-                activo.setUsuarioActual(usuario);
+                activo.setUsuarioActual(ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega") ? null : usuario);
                 break;
 
-            // ... (resto de los 'case' sin cambios)
             case "MANTENIMIENTO":
-                estadoNuevo = estadoRepository.findById(4L) // Estado: En mantenimiento
-                        .orElseThrow(() -> new RuntimeException("Estado 'En mantenimiento' no encontrado"));
-                activo.setUsuarioActual(null);
-                break;
-
-            case "BAJA":
-                estadoNuevo = estadoRepository.findById(5L) // Estado: Retirado
-                        .orElseThrow(() -> new RuntimeException("Estado 'Retirado' no encontrado"));
+                estadoNuevo = estadoRepository.findByNombreEstado("Mantenimiento")
+                        .orElseThrow(() -> new RuntimeException("Estado 'Mantenimiento' no encontrado"));
                 activo.setUsuarioActual(null);
                 break;
 
             case "TRASLADO":
-                estadoNuevo = activo.getEstado();
+                // Traslado también usa la lógica de ubicación
+                estadoNuevo = ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega")
+                        ? estadoRepository.findByNombreEstado("En bodega")
+                        .orElseThrow(() -> new RuntimeException("Estado 'En bodega' no encontrado"))
+                        : activo.getEstado();
+                if (ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega")) {
+                    activo.setUsuarioActual(null);
+                }
                 break;
 
             default:
-                throw new IllegalArgumentException("Tipo de movimiento no válido: " + dto.getTipoDeMovimiento());
+                throw new IllegalArgumentException("Tipo de movimiento no reconocido: '" + dto.getTipoDeMovimiento() + "'. Use el botón de baja para retirar activos.");
         }
 
         activo.setEstado(estadoNuevo);

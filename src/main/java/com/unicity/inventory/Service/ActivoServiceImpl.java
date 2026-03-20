@@ -89,8 +89,7 @@ public class ActivoServiceImpl implements ActivoService {
         movimientoInicial.setActivo(activoGuardado);
 
         // Asumimos que la ubicación de Bodega siempre tiene el ID 1
-        Ubicacion ubicacionBodega = ubicacionRepository.findById(1L)
-                .orElseThrow(() -> new RuntimeException("Ubicación 'Bodega' con ID 1 no encontrada."));
+        Ubicacion ubicacionBodega = getUbicacionByNombre("Bodega");
         movimientoInicial.setUbicacion(ubicacionBodega);
 
         // Escenario 1: El activo SE ASIGNA a un usuario al crearse
@@ -168,7 +167,7 @@ public class ActivoServiceImpl implements ActivoService {
                     Usuario usuarioAnteriorObj = (idUsuarioAnterior != null) ? usuarioRepository.findById(idUsuarioAnterior).orElse(null) : null;
                     movimiento.setUsuario(usuarioAnteriorObj);
                 }
-                Ubicacion ubicacion = ubicacionRepository.findById(1L).orElseThrow(() -> new RuntimeException("Ubicación por defecto no encontrada"));
+                Ubicacion ubicacion = getUbicacionByNombre("Bodega");
                 movimiento.setUbicacion(ubicacion);
                 movimientoRepository.save(movimiento);
             }
@@ -179,47 +178,36 @@ public class ActivoServiceImpl implements ActivoService {
 
     @Override
     @Transactional
-    public void deleteActivo(Long id) {
-        // 1. Buscamos el activo que se va a dar de baja.
+    public void deleteActivo(Long id, String motivo) {
         Activo activo = activoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activo no encontrado con ID: " + id));
 
-        // 2. Buscamos las entidades necesarias para el movimiento.
-        Estado estadoBaja = estadoRepository.findById(5L) // Asumiendo que el ID 5 es "Baja" o "Retirado"
-                .orElseThrow(() -> new RuntimeException("Estado 'Baja' con ID 5 no encontrado."));
-        Ubicacion ubicacionBodega = ubicacionRepository.findById(1L)
-                .orElseThrow(() -> new RuntimeException("Ubicación 'Bodega' con ID 1 no encontrada."));
-
-        // --- LÓGICA CORREGIDA ---
-        // 3. Determinamos quién realiza el movimiento.
-        Usuario usuarioDelMovimiento;
-
-        // Si el activo tenía un usuario asignado, ese es el usuario del movimiento.
-        if (activo.getUsuarioActual() != null) {
-            usuarioDelMovimiento = activo.getUsuarioActual();
-        } else {
-            // Si el activo estaba en bodega (sin usuario), el movimiento se registra a nombre del "Sistema".
-            usuarioDelMovimiento = usuarioRepository.findById(99L)
-                    .orElseThrow(() -> new RuntimeException("Usuario 'Sistema' con ID 99 no encontrado."));
+        // Validación: no se puede dar de baja un activo en mantenimiento
+        String estadoActual = activo.getEstado().getNombreEstado().toUpperCase();
+        if (estadoActual.contains("MANTENIMIENTO")) {
+            throw new IllegalStateException("No se puede dar de baja un activo en mantenimiento. Primero devuélvelo a bodega.");
         }
 
-        // 4. Creamos el movimiento de "Baja".
+        Estado estadoBaja = getEstadoByNombre("Retirado");
+        Ubicacion ubicacionBodega = getUbicacionByNombre("Bodega");
+
+        Usuario usuarioDelMovimiento = activo.getUsuarioActual() != null
+                ? activo.getUsuarioActual()
+                : usuarioRepository.findById(99L)
+                .orElseThrow(() -> new RuntimeException("Usuario 'Sistema' no encontrado."));
+
         Movimiento movimientoDeBaja = new Movimiento();
         movimientoDeBaja.setTipoDeMovimiento("Baja de Activo");
         movimientoDeBaja.setFechaMovimiento(LocalDate.now());
         movimientoDeBaja.setActivo(activo);
-        movimientoDeBaja.setUsuario(usuarioDelMovimiento); // ✅ Asignamos el usuario correcto.
+        movimientoDeBaja.setUsuario(usuarioDelMovimiento);
         movimientoDeBaja.setUbicacion(ubicacionBodega);
-        movimientoDeBaja.setObservacion("Activo dado de baja del sistema.");
+        movimientoDeBaja.setObservacion(motivo);
         movimientoRepository.save(movimientoDeBaja);
 
-        // 5. Actualizamos el estado final del activo.
         activo.setEstado(estadoBaja);
-        activo.setUsuarioActual(null); // Nos aseguramos de que no quede asignado a nadie.
+        activo.setUsuarioActual(null);
         activoRepository.save(activo);
-
-        // Nota: En lugar de borrar el activo, lo marcamos como "Baja". Si realmente quieres borrarlo,
-        // la línea sería activoRepository.delete(activo); pero se perdería el historial.
     }
     @Override
     public List<ActivoDto> findActivoByUsuarioAndCategoria(Long usuarioId, Long categoriaId) {
@@ -234,13 +222,11 @@ public class ActivoServiceImpl implements ActivoService {
     public List<ActivoDto> findDisponiblesByCategoria(Long categoriaId) {
         // ✅ ESTA LÍNEA DEFINE TU REQUERIMIENTO
         // Le decimos al sistema que "disponible" significa estado 1 (Nuevo) O estado 6 (En Bodega).
-        List<Long> estadosDisponiblesIds = Arrays.asList(1L, 6L);
-
-        // El resto del código usa esa lista para buscar en la base de datos
+        Estado estadoNuevo = getEstadoByNombre("Nuevo");
+        Estado estadoEnBodega = getEstadoByNombre("En bodega");
+        List<Long> estadosDisponiblesIds = Arrays.asList(estadoNuevo.getIdEstado(), estadoEnBodega.getIdEstado());
         List<Activo> activosDisponibles = activoRepository.findActivosDisponiblesPorCategoriaYEstados(
-                categoriaId,
-                estadosDisponiblesIds
-        );
+                categoriaId, estadosDisponiblesIds);
 
         // Mapea los resultados a DTOs como antes.
         return activosDisponibles.stream()
@@ -308,5 +294,14 @@ public class ActivoServiceImpl implements ActivoService {
             // Si por alguna razón la colección es nula, devuelve una lista vacía
             return Collections.emptyList();
         }
+    }
+    private Estado getEstadoByNombre(String nombre) {
+        return estadoRepository.findByNombreEstado(nombre)
+                .orElseThrow(() -> new RuntimeException("Estado '" + nombre + "' no encontrado en la BD."));
+    }
+
+    private Ubicacion getUbicacionByNombre(String nombre) {
+        return ubicacionRepository.findByNombreUbicacion(nombre)
+                .orElseThrow(() -> new RuntimeException("Ubicación '" + nombre + "' no encontrada en la BD."));
     }
 }

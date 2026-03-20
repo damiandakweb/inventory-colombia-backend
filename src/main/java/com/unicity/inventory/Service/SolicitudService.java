@@ -26,5 +26,7 @@ public interface SolicitudService {
     void enviarActivoAMantenimiento(Long solicitudId, Long activoId);
 
     void procesarSolicitudDeDevolucion(Long solicitudId, DevolucionRequest request);
+
+    void rechazarSolicitud(Long solicitudId, String motivo);
 }
 
