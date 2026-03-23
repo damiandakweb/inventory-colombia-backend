@@ -36,14 +36,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas — solo login, registro y swagger
-                        .requestMatchers("/api/auth/**", "/usuarios/register").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Solo login es público
+                        .requestMatchers("/api/auth/login").permitAll()
 
-                        // Endpoint público para recibir solicitudes desde scripts externos
+                        // Script externo puede crear solicitudes sin token
                         .requestMatchers(HttpMethod.POST, "/api/solicitudes").permitAll()
 
-                        // Todo lo demás — GET, POST, PUT, DELETE — requiere autenticación
+                        // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
@@ -54,7 +53,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://10.13.20.16")); // Añade la IP de la Pi
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://10.13.20.16", "https://asset-col.unicity.com")); // Añade la IP de la Pi
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
