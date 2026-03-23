@@ -3,6 +3,7 @@ package com.unicity.inventory.Service;
 import com.unicity.inventory.Mapping.*;
 import com.unicity.inventory.Models.*;
 import com.unicity.inventory.Repository.*;
+import com.unicity.inventory.exceptions.BusinessException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -394,7 +395,7 @@ public class SolicitudServiceImpl  implements  SolicitudService {
 
         // VERIFICACIÓN DE SEGURIDAD: Asegurarnos de que el activo pertenece al usuario de la solicitud
         if (!activo.getUsuarioActual().getIdUsuario().equals(solicitud.getUsuario().getIdUsuario())) {
-            throw new SecurityException("Intento de procesar un activo que no pertenece al usuario.");
+            throw new BusinessException("Intento de procesar un activo que no pertenece al usuario.");
         }
 
 

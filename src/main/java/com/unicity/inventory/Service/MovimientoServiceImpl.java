@@ -9,6 +9,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.unicity.inventory.exceptions.ResourceNotFoundException;
+import com.unicity.inventory.exceptions.BusinessException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -39,11 +41,11 @@ public class MovimientoServiceImpl implements MovimientoService {
     public MovimientoDto createMovimiento(MovimientoDto dto) {
         // 1. Buscamos las entidades principales
         Usuario usuario = usuarioRepository.findById(dto.getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + dto.getIdUsuario()));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + dto.getIdUsuario()));
         Ubicacion ubicacion = ubicacionRepository.findById(dto.getIdUbicacion())
-                .orElseThrow(() -> new RuntimeException("Ubicación no encontrada con ID: " + dto.getIdUbicacion()));
+                .orElseThrow(() -> new ResourceNotFoundException("Ubicación no encontrada con ID: " + dto.getIdUbicacion()));
         Activo activo = activoRepository.findById(dto.getIdEquipo())
-                .orElseThrow(() -> new RuntimeException("Activo no encontrado con ID: " + dto.getIdEquipo()));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo no encontrado con ID: " + dto.getIdEquipo()));
 
         // 2. Lógica para determinar y actualizar el estado del activo
         String tipoMovimiento = dto.getTipoDeMovimiento().trim().toUpperCase();
@@ -52,7 +54,7 @@ public class MovimientoServiceImpl implements MovimientoService {
         switch (tipoMovimiento) {
             case "INGRESO":
                 estadoNuevo = estadoRepository.findByNombreEstado("Nuevo")
-                        .orElseThrow(() -> new RuntimeException("Estado 'Nuevo' no encontrado"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Estado 'Nuevo' no encontrado"));
                 activo.setUsuarioActual(null);
                 break;
 
@@ -70,11 +72,11 @@ public class MovimientoServiceImpl implements MovimientoService {
                     // Validación: solo el dueño o Sistema puede devolver
                     if (!esSistema && activo.getUsuarioActual() != null &&
                             !activo.getUsuarioActual().getIdUsuario().equals(usuario.getIdUsuario())) {
-                        throw new SecurityException("El activo pertenece a '" +
+                        throw new BusinessException("El activo pertenece a '" +
                                 activo.getUsuarioActual().getNombre() + "', no a '" + usuario.getNombre() + "'.");
                     }
                     estadoNuevo = estadoRepository.findByNombreEstado("En bodega")
-                            .orElseThrow(() -> new RuntimeException("Estado 'En bodega' no encontrado"));
+                            .orElseThrow(() -> new ResourceNotFoundException("Estado 'En bodega' no encontrado"));
                     activo.setUsuarioActual(null);
 
                 } else {
@@ -89,7 +91,7 @@ public class MovimientoServiceImpl implements MovimientoService {
                                 "'. Solo se pueden entregar activos en bodega o mantenimiento.");
                     }
                     estadoNuevo = estadoRepository.findByNombreEstado("En uso")
-                            .orElseThrow(() -> new RuntimeException("Estado 'En uso' no encontrado"));
+                            .orElseThrow(() -> new ResourceNotFoundException("Estado 'En uso' no encontrado"));
                     activo.setUsuarioActual(usuario);
                 }
                 break;
@@ -111,15 +113,15 @@ public class MovimientoServiceImpl implements MovimientoService {
                 // La ubicación determina el estado
                 estadoNuevo = ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega")
                         ? estadoRepository.findByNombreEstado("En bodega")
-                        .orElseThrow(() -> new RuntimeException("Estado 'En bodega' no encontrado"))
+                        .orElseThrow(() -> new ResourceNotFoundException("Estado 'En bodega' no encontrado"))
                         : estadoRepository.findByNombreEstado("En uso")
-                        .orElseThrow(() -> new RuntimeException("Estado 'En uso' no encontrado"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Estado 'En uso' no encontrado"));
                 activo.setUsuarioActual(ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega") ? null : usuario);
                 break;
 
             case "MANTENIMIENTO":
                 estadoNuevo = estadoRepository.findByNombreEstado("Mantenimiento")
-                        .orElseThrow(() -> new RuntimeException("Estado 'Mantenimiento' no encontrado"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Estado 'Mantenimiento' no encontrado"));
                 activo.setUsuarioActual(null);
                 break;
 
@@ -127,7 +129,7 @@ public class MovimientoServiceImpl implements MovimientoService {
                 // Traslado también usa la lógica de ubicación
                 estadoNuevo = ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega")
                         ? estadoRepository.findByNombreEstado("En bodega")
-                        .orElseThrow(() -> new RuntimeException("Estado 'En bodega' no encontrado"))
+                        .orElseThrow(() -> new ResourceNotFoundException("Estado 'En bodega' no encontrado"))
                         : activo.getEstado();
                 if (ubicacion.getNombreUbicacion().equalsIgnoreCase("Bodega")) {
                     activo.setUsuarioActual(null);
@@ -197,13 +199,13 @@ public class MovimientoServiceImpl implements MovimientoService {
 
 
             Activo activo = activoRepository.findById(movimientoDetails.getIdEquipo())
-                    .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
 
             Usuario usuario = usuarioRepository.findById(movimientoDetails.getIdUsuario())
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
             Ubicacion ubicacion = ubicacionRepository.findById(movimientoDetails.getIdUbicacion())
-                    .orElseThrow(() -> new RuntimeException("Ubicacion no encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Ubicacion no encontrada"));
 
             // Actualizar campos
 

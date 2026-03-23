@@ -7,6 +7,8 @@ import com.unicity.inventory.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.unicity.inventory.exceptions.ResourceNotFoundException;
+import com.unicity.inventory.exceptions.BusinessException;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -73,9 +75,9 @@ public class ActivoServiceImpl implements ActivoService {
         Activo nuevoActivo = activoMapping.toEntity(dto);
 
         Categoria cat = categoriaRepository.findById(dto.getIdCategoria())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
         Estado est = estadoRepository.findById(dto.getIdEstado())
-                .orElseThrow(() -> new RuntimeException("Estado no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Estado no encontrado"));
 
         nuevoActivo.setCategoria(cat);
         nuevoActivo.setEstado(est);
@@ -95,7 +97,7 @@ public class ActivoServiceImpl implements ActivoService {
         // Escenario 1: El activo SE ASIGNA a un usuario al crearse
         if (dto.getIdUsuarioActual() != null && dto.getIdUsuarioActual() > 0) {
             Usuario usuarioAsignado = usuarioRepository.findById(dto.getIdUsuarioActual())
-                    .orElseThrow(() -> new RuntimeException("Usuario a asignar no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario a asignar no encontrado"));
 
             activoGuardado.setUsuarioActual(usuarioAsignado);
 
@@ -107,7 +109,7 @@ public class ActivoServiceImpl implements ActivoService {
         else {
             // Buscamos al usuario "Sistema" que creamos (con ID 99)
             Usuario usuarioSistema = usuarioRepository.findById(99L)
-                    .orElseThrow(() -> new RuntimeException("Usuario 'Sistema' con ID 99 no encontrado."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario 'Sistema' no encontrado"));
 
             movimientoInicial.setTipoDeMovimiento("Ingreso a Bodega");
             movimientoInicial.setUsuario(usuarioSistema);
@@ -127,8 +129,8 @@ public class ActivoServiceImpl implements ActivoService {
             Long idUsuarioAnterior = (activoExistente.getUsuarioActual() != null) ? activoExistente.getUsuarioActual().getIdUsuario() : null;
 
             // Buscamos las entidades relacionadas
-            Categoria cat = categoriaRepository.findById(dto.getIdCategoria()).orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-            Estado est = estadoRepository.findById(dto.getIdEstado()).orElseThrow(() -> new RuntimeException("Estado no encontrado"));
+            Categoria cat = categoriaRepository.findById(dto.getIdCategoria()).orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
+            Estado est = estadoRepository.findById(dto.getIdEstado()).orElseThrow(() -> new ResourceNotFoundException("Estado no encontrado"));
 
             // Actualizamos los campos del activo
             activoExistente.setNumeroDeSerie(dto.getNumeroDeSerie());
@@ -180,12 +182,12 @@ public class ActivoServiceImpl implements ActivoService {
     @Transactional
     public void deleteActivo(Long id, String motivo) {
         Activo activo = activoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Activo no encontrado con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo no encontrado con ID: " + id));
 
         // Validación: no se puede dar de baja un activo en mantenimiento
         String estadoActual = activo.getEstado().getNombreEstado().toUpperCase();
-        if (estadoActual.contains("MANTENIMIENTO")) {
-            throw new IllegalStateException("No se puede dar de baja un activo en mantenimiento. Primero devuélvelo a bodega.");
+        if (estadoActual.contains("RETIRADO")) {
+            throw new BusinessException("El activo ya está retirado del sistema.");
         }
 
         Estado estadoBaja = getEstadoByNombre("Retirado");
@@ -194,7 +196,7 @@ public class ActivoServiceImpl implements ActivoService {
         Usuario usuarioDelMovimiento = activo.getUsuarioActual() != null
                 ? activo.getUsuarioActual()
                 : usuarioRepository.findById(99L)
-                .orElseThrow(() -> new RuntimeException("Usuario 'Sistema' no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario 'Sistema' no encontrado."));
 
         Movimiento movimientoDeBaja = new Movimiento();
         movimientoDeBaja.setTipoDeMovimiento("Baja de Activo");
@@ -249,9 +251,9 @@ public class ActivoServiceImpl implements ActivoService {
     @Transactional
     public void enlazarActivo(Long activoId, Long relacionadoId) {
         Activo activoPrincipal = activoRepository.findById(activoId)
-                .orElseThrow(() -> new RuntimeException("Activo principal no encontrado con ID: " + activoId));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo principal no encontrado con ID: " + activoId));
         Activo activoRelacionado = activoRepository.findById(relacionadoId)
-                .orElseThrow(() -> new RuntimeException("Activo a relacionar no encontrado con ID: " + relacionadoId));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo a relacionar no encontrado con ID: " + relacionadoId));
 
         // Añadimos la relación en ambas direcciones
         activoPrincipal.getActivosRelacionados().add(activoRelacionado);
@@ -266,9 +268,9 @@ public class ActivoServiceImpl implements ActivoService {
     @Transactional
     public void desenlazarActivo(Long activoId, Long relacionadoId) {
         Activo activoPrincipal = activoRepository.findById(activoId)
-                .orElseThrow(() -> new RuntimeException("Activo principal no encontrado con ID: " + activoId));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo principal no encontrado con ID: " + activoId));
         Activo activoRelacionado = activoRepository.findById(relacionadoId)
-                .orElseThrow(() -> new RuntimeException("Activo a desenlazar no encontrado con ID: " + relacionadoId));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo a desenlazar no encontrado con ID: " + relacionadoId));
 
         // Eliminamos la relación en ambas direcciones
         activoPrincipal.getActivosRelacionados().remove(activoRelacionado);
@@ -282,7 +284,7 @@ public class ActivoServiceImpl implements ActivoService {
     public List<ActivoDto> findActivosRelacionados(Long activoId) {
         // 1. Busca el activo principal por su ID
         Activo activoPrincipal = activoRepository.findById(activoId)
-                .orElseThrow(() -> new RuntimeException("Activo no encontrado con ID: " + activoId));
+                .orElseThrow(() -> new ResourceNotFoundException("Activo no encontrado con ID: " + activoId));
 
         // 2. Accede a la colección de relacionados (gracias a @Transactional, se cargará ahora)
         //    y mapea cada uno usando el mapper simple para evitar bucles.
@@ -297,11 +299,11 @@ public class ActivoServiceImpl implements ActivoService {
     }
     private Estado getEstadoByNombre(String nombre) {
         return estadoRepository.findByNombreEstado(nombre)
-                .orElseThrow(() -> new RuntimeException("Estado '" + nombre + "' no encontrado en la BD."));
+                .orElseThrow(() -> new ResourceNotFoundException("Estado '" + nombre + "' no encontrado en la BD."));
     }
 
     private Ubicacion getUbicacionByNombre(String nombre) {
         return ubicacionRepository.findByNombreUbicacion(nombre)
-                .orElseThrow(() -> new RuntimeException("Ubicación '" + nombre + "' no encontrada en la BD."));
+                .orElseThrow(() -> new ResourceNotFoundException("Ubicación '" + nombre + "' no encontrada en la BD."));
     }
 }
