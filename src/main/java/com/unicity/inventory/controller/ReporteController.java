@@ -1,7 +1,7 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.ReporteRequest;
-import com.unicity.inventory.Service.ReporteService;
+import com.unicity.inventory.mapping.ReporteRequest;
+import com.unicity.inventory.service.ReporteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

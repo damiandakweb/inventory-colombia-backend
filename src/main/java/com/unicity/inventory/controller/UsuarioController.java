@@ -1,19 +1,14 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.UsuarioDto;
-import com.unicity.inventory.Mapping.UsuarioMapping;
-import com.unicity.inventory.Models.Usuario;
-import com.unicity.inventory.Service.UsuarioServiceImpl;
+import com.unicity.inventory.mapping.UsuarioDto;
+import com.unicity.inventory.service.UsuarioServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/usuarios")

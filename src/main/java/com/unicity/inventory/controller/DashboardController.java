@@ -1,7 +1,7 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.DashboardSummaryDto;
-import com.unicity.inventory.Service.DashboardService;
+import com.unicity.inventory.mapping.DashboardSummaryDto;
+import com.unicity.inventory.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

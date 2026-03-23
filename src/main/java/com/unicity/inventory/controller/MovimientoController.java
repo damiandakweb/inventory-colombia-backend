@@ -1,13 +1,12 @@
 package com.unicity.inventory.controller;
 
 
-import com.unicity.inventory.Mapping.MovimientoDto;
-import com.unicity.inventory.Mapping.MovimientoMapping;
-import com.unicity.inventory.Models.Movimiento;
-import com.unicity.inventory.Repository.MovimientoRepository;
-import com.unicity.inventory.Service.MovimientoServiceImpl;
+import com.unicity.inventory.mapping.MovimientoDto;
+import com.unicity.inventory.mapping.MovimientoMapping;
+import com.unicity.inventory.models.Movimiento;
+import com.unicity.inventory.repository.MovimientoRepository;
+import com.unicity.inventory.service.MovimientoServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

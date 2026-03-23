@@ -1,9 +1,9 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.UbicacionDto;
-import com.unicity.inventory.Mapping.UbicacionMapping;
-import com.unicity.inventory.Models.Ubicacion;
-import com.unicity.inventory.Service.UbicacionServiceImpl;
+import com.unicity.inventory.mapping.UbicacionDto;
+import com.unicity.inventory.mapping.UbicacionMapping;
+import com.unicity.inventory.models.Ubicacion;
+import com.unicity.inventory.service.UbicacionServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController

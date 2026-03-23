@@ -1,7 +1,7 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.ActivoDto;
-import com.unicity.inventory.Service.ActivoService;
+import com.unicity.inventory.mapping.ActivoDto;
+import com.unicity.inventory.service.ActivoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,8 +1,8 @@
 package com.unicity.inventory.tasks;
 
-import com.unicity.inventory.Mapping.SolicitudDto;
-import com.unicity.inventory.Service.CsvReaderService; // Importamos el nuevo servicio
-import com.unicity.inventory.Service.SolicitudService;
+import com.unicity.inventory.mapping.SolicitudDto;
+import com.unicity.inventory.service.CsvReaderService; // Importamos el nuevo servicio
+import com.unicity.inventory.service.SolicitudService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

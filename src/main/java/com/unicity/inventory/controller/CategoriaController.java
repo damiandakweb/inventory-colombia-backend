@@ -1,9 +1,9 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.CategoriaDto;
-import com.unicity.inventory.Mapping.CategoriaMapping;
-import com.unicity.inventory.Models.Categoria;
-import com.unicity.inventory.Service.CategoriaServicelmpl;
+import com.unicity.inventory.mapping.CategoriaDto;
+import com.unicity.inventory.mapping.CategoriaMapping;
+import com.unicity.inventory.models.Categoria;
+import com.unicity.inventory.service.CategoriaServicelmpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

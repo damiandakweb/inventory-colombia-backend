@@ -1,9 +1,9 @@
 package com.unicity.inventory.controller;
 
 
-import com.unicity.inventory.Mapping.*;
-import com.unicity.inventory.Repository.SolicitudRepository;
-import com.unicity.inventory.Service.SolicitudServiceImpl;
+import com.unicity.inventory.mapping.*;
+import com.unicity.inventory.repository.SolicitudRepository;
+import com.unicity.inventory.service.SolicitudServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

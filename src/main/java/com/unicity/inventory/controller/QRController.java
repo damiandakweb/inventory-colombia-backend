@@ -1,6 +1,6 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Service.QRServiceImpl;
+import com.unicity.inventory.service.QRServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;

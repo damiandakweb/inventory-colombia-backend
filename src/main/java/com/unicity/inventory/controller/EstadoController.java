@@ -1,9 +1,9 @@
 package com.unicity.inventory.controller;
 
-import com.unicity.inventory.Mapping.EstadoDto;
-import com.unicity.inventory.Mapping.EstadoMapping;
-import com.unicity.inventory.Models.Estado;
-import com.unicity.inventory.Service.EstadoServicelmpl;
+import com.unicity.inventory.mapping.EstadoDto;
+import com.unicity.inventory.mapping.EstadoMapping;
+import com.unicity.inventory.models.Estado;
+import com.unicity.inventory.service.EstadoServicelmpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
