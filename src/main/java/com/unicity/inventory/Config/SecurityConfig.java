@@ -36,21 +36,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Reglas públicas (login, registro, etc.)
+                        // Rutas públicas — solo login, registro y swagger
                         .requestMatchers("/api/auth/**", "/usuarios/register").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        // Permite TODAS las peticiones de LECTURA (GET) a la API sin necesidad de token
-                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+                        // Endpoint público para recibir solicitudes desde scripts externos
+                        .requestMatchers(HttpMethod.POST, "/api/solicitudes").permitAll()
 
-                        // ✅ CAMBIO CLAVE: Reglas específicas para peticiones de escritura
-                        // Permite peticiones POST, PUT, DELETE a /api/activos/** para CUALQUIER usuario autenticado.
-                        // La autorización por ROL se manejará a nivel de método con @PreAuthorize.
-                        .requestMatchers(HttpMethod.POST, "/api/activos/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/activos/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/activos/**").authenticated()
-
-                        // CUALQUIER OTRA petición (que no coincida con las reglas anteriores) requiere autenticación
+                        // Todo lo demás — GET, POST, PUT, DELETE — requiere autenticación
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
