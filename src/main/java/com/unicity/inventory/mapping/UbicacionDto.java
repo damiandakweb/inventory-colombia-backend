@@ -14,4 +14,6 @@ public class UbicacionDto {
 
     private Long idUbicacion;
     private String nombreUbicacion;
+    private String nombreEn;
+
 }

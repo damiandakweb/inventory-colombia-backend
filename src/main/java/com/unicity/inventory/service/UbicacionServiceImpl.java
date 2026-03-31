@@ -62,6 +62,7 @@ public class UbicacionServiceImpl implements UbicacionService{
                 .map(ubicacionExistente -> {
                     // Actualizamos el campo que viene del DTO
                     ubicacionExistente.setNombreUbicacion(ubicacionDetails.getNombreUbicacion());
+                    ubicacionExistente.setNombreEn(ubicacionDetails.getNombreEn());
                     // Guardamos la entidad modificada
                     Ubicacion actualizada = ubicacionRepository.save(ubicacionExistente);
                     // Devolvemos el DTO actualizado

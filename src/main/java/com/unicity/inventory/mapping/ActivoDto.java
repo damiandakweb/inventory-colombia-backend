@@ -23,4 +23,6 @@ public class ActivoDto {
     private String modelo;
     private String pais;
     private List<ActivoDto> activosRelacionados = new ArrayList<>();
+    private String nombreCategoriaEn;
+    private String nombreUbicacionEn;
 }

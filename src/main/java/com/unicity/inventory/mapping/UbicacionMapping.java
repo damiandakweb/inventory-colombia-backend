@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 public class UbicacionMapping {
 
         public UbicacionDto ubicacionDto(Ubicacion ubicacion) {
-            return new UbicacionDto(ubicacion.getIdUbicacion(),ubicacion.getNombreUbicacion());
+            return new UbicacionDto(ubicacion.getIdUbicacion(),ubicacion.getNombreUbicacion(),ubicacion.getNombreEn());
         }
 
         public Ubicacion dtotoUbicacion(UbicacionDto ubicacionDto) {
-            return new Ubicacion(ubicacionDto.getIdUbicacion(),ubicacionDto.getNombreUbicacion());
+            return new Ubicacion(ubicacionDto.getIdUbicacion(),ubicacionDto.getNombreUbicacion(),ubicacionDto.getNombreEn());
         }
 }

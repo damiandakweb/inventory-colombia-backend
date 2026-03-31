@@ -4,10 +4,12 @@ public class CategoriaDto {
 
     private Long idCategoria;
     private String nombreCategoria;
+    private String nombreEn;
 
-    public CategoriaDto(Long idCategoria, String nombreCategoria) {
+    public CategoriaDto(Long idCategoria, String nombreCategoria, String nombreEn) {
         this.idCategoria = idCategoria;
         this.nombreCategoria = nombreCategoria;
+        this.nombreEn = nombreEn;
     }
 
      public CategoriaDto() {
@@ -29,4 +31,8 @@ public class CategoriaDto {
     public void setNombreCategoria(String nombreCategoria) {
         this.nombreCategoria = nombreCategoria;
     }
+
+    public String getNombreEn() { return nombreEn; }
+
+    public void setNombreEn(String nombreEn) { this.nombreEn = nombreEn; }
 }

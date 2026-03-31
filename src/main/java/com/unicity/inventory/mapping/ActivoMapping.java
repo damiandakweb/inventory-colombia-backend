@@ -31,6 +31,7 @@ public class ActivoMapping {
         if (activo.getCategoria() != null) {
             dto.setNombreCategoria(activo.getCategoria().getNombreCategoria());
             dto.setIdCategoria(activo.getCategoria().getIdCategoria());
+            dto.setNombreCategoriaEn(activo.getCategoria().getNombreEn());
         }
         if (activo.getUsuarioActual() != null) {
             dto.setNombreUsuarioActual(activo.getUsuarioActual().getNombre());

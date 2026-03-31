@@ -58,6 +58,7 @@ public class ActivoServiceImpl implements ActivoService {
             Movimiento ultimoMovimiento = movimientoMap.get(activo.getIdEquipo());
             if (ultimoMovimiento != null && ultimoMovimiento.getUbicacion() != null) {
                 dto.setNombreUbicacionActual(ultimoMovimiento.getUbicacion().getNombreUbicacion());
+                dto.setNombreUbicacionEn(ultimoMovimiento.getUbicacion().getNombreEn());
             }
 
             return dto;

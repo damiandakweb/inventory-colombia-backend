@@ -66,13 +66,11 @@ public class CategoriaServicelmpl implements CategoriaService {
         // Buscamos la categoría existente por su ID
         return categoriaRepository.findById(id)
                 .map(categoriaExistente -> {
-                    // Si existe, actualizamos su nombre con el del DTO
                     categoriaExistente.setNombreCategoria(categoriaDto.getNombreCategoria());
-                    // Guardamos la entidad actualizada
+                    categoriaExistente.setNombreEn(categoriaDto.getNombreEn());
                     Categoria categoriaActualizada = categoriaRepository.save(categoriaExistente);
-                    // Devolvemos el DTO del resultado
                     return Optional.of(categoriaMapping.categoriaDto(categoriaActualizada));
                 })
-                .orElse(Optional.empty()); // Si no se encuentra, devuelve un Optional vacío
+                .orElse(Optional.empty());
     }
 }

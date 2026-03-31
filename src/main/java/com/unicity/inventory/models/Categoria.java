@@ -29,4 +29,13 @@ public class Categoria {
         this.idCategoria = idCategoria;
         this.nombreCategoria = nombreCategoria;
     }
+
+    @Column(name = "nombre_en")
+    private String nombreEn;
+
+    public Categoria(Long idCategoria, String nombreCategoria, String nombreEn) {
+        this.idCategoria = idCategoria;
+        this.nombreCategoria = nombreCategoria;
+        this.nombreEn = nombreEn;
+    }
 }
