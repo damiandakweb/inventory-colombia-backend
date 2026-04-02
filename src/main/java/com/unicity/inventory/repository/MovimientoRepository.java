@@ -37,4 +37,5 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 // Pide la primera página (índice 0) con un tamaño de 5 elementos
                 return findLatestMovements(PageRequest.of(0, 5));
         }
+        List<Movimiento> findByActivo_IdEquipoOrderByFechaMovimientoDesc(Long activoId);
 }

@@ -5,6 +5,7 @@ import com.unicity.inventory.mapping.ActivoMapping;
 import com.unicity.inventory.models.*;
 import com.unicity.inventory.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.unicity.inventory.exceptions.ResourceNotFoundException;
@@ -30,6 +31,9 @@ public class ActivoServiceImpl implements ActivoService {
     private final ActivoMapping activoMapping;
     private final UbicacionRepository ubicacionRepository;
     private final MovimientoRepository movimientoRepository;
+
+    @Autowired
+    private SyncService syncService;
 
     @Override
     @Transactional(readOnly = true) // Añadir Transactional para asegurar que las relaciones LAZY funcionen
@@ -120,6 +124,7 @@ public class ActivoServiceImpl implements ActivoService {
         movimientoRepository.save(movimientoInicial);
         // --- FIN DE LA LÓGICA DEL PARCHE ---
 
+        syncService.syncActivo(activoGuardado);
         return activoMapping.toDto(activoGuardado);
     }
     @Override
@@ -175,7 +180,9 @@ public class ActivoServiceImpl implements ActivoService {
                 movimientoRepository.save(movimiento);
             }
 
-            return activoMapping.toDto(activoRepository.save(activoExistente));
+            Activo actualizado = activoRepository.save(activoExistente);
+            syncService.syncActivo(actualizado);
+            return activoMapping.toDto(actualizado);
         });
     }
 
@@ -210,7 +217,8 @@ public class ActivoServiceImpl implements ActivoService {
 
         activo.setEstado(estadoBaja);
         activo.setUsuarioActual(null);
-        activoRepository.save(activo);
+        Activo activoRetirado = activoRepository.save(activo);
+        syncService.syncActivo(activoRetirado);
     }
     @Override
     public List<ActivoDto> findActivoByUsuarioAndCategoria(Long usuarioId, Long categoriaId) {

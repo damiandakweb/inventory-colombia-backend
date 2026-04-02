@@ -52,6 +52,9 @@ public class Activo {
     @Column(name = "pais", length = 2)
     private String pais;
 
+    @Column(name = "itglue_id")
+    private Long itglueId;
+
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(
             name = "activo_relacionado",
