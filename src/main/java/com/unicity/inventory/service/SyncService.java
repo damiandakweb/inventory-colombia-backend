@@ -6,6 +6,7 @@ import com.unicity.inventory.repository.ActivoRepository;
 import com.unicity.inventory.repository.MovimientoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import com.unicity.inventory.repository.IntegrationTypeMappingRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,16 +17,20 @@ public class SyncService {
     private final ITGlueService itGlueService;
     private final ActivoRepository activoRepository;
     private final MovimientoRepository movimientoRepository;
+    private final JumpCloudService jumpCloudService;
+
 
     private static final Long ITGLUE_STATUS_ACTIVE = 46600L;
     private static final Long ITGLUE_STATUS_INACTIVE = 46601L;
 
     public SyncService(ITGlueService itGlueService,
                        ActivoRepository activoRepository,
-                       MovimientoRepository movimientoRepository) {
+                       MovimientoRepository movimientoRepository,
+                       JumpCloudService jumpCloudService) {
         this.itGlueService = itGlueService;
         this.activoRepository = activoRepository;
         this.movimientoRepository = movimientoRepository;
+        this.jumpCloudService = jumpCloudService;
     }
 
     @Transactional
@@ -63,6 +68,7 @@ public class SyncService {
                 if (esRetirado(activo)) {
                     itGlueService.archiveConfiguration(activo.getItglueId());
                 }
+                syncJumpCloud(activo);
                 return;
             }
 
@@ -83,6 +89,7 @@ public class SyncService {
                             activo.getEtiquetaInventario(),
                             locationId
                     );
+                    syncJumpCloud(activo);
                     return;
                 }
             }
@@ -103,7 +110,7 @@ public class SyncService {
                 activo.setItglueId(id);
                 activoRepository.save(activo);
             });
-
+            syncJumpCloud(activo);
         } catch (Exception e) {
             System.err.println("Error sincronizando activo "
                     + activo.getIdEquipo() + ": " + e.getMessage());
@@ -124,4 +131,46 @@ public class SyncService {
         return activo.getEstado() != null &&
                 activo.getEstado().getNombreEstado().equalsIgnoreCase("Retirado");
     }
+    // ✅ Sincroniza con JumpCloud solo si es laptop/desktop/all in one
+    private void syncJumpCloud(Activo activo) {
+        String categoria = activo.getCategoria() != null
+                ? activo.getCategoria().getNombreCategoria().toLowerCase()
+                : "";
+
+        boolean esDispositivo = categoria.contains("portatil")
+                || categoria.contains("computador")
+                || categoria.contains("all in one");
+
+        if (!esDispositivo) return;
+
+        try {
+            // Si ya tiene jumpcloud_id → actualizar nombre
+            if (activo.getJumpcloudId() != null) {
+                jumpCloudService.updateSystem(
+                        activo.getJumpcloudId(),
+                        activo.getEtiquetaInventario()
+                );
+                return;
+            }
+
+            // Buscar por serial number
+            if (activo.getNumeroDeSerie() != null
+                    && !activo.getNumeroDeSerie().isBlank()) {
+                Optional<String> existingId = jumpCloudService
+                        .findBySerialNumber(activo.getNumeroDeSerie());
+                if (existingId.isPresent()) {
+                    activo.setJumpcloudId(existingId.get());
+                    activoRepository.save(activo);
+                    jumpCloudService.updateSystem(
+                            existingId.get(),
+                            activo.getEtiquetaInventario()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error sincronizando con JumpCloud activo "
+                    + activo.getIdEquipo() + ": " + e.getMessage());
+        }
+    }
+
 }

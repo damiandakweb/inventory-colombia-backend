@@ -55,6 +55,9 @@ public class Activo {
     @Column(name = "itglue_id")
     private Long itglueId;
 
+    @Column(name = "jumpcloud_id")
+    private String jumpcloudId;
+
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(
             name = "activo_relacionado",
