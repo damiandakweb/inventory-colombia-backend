@@ -183,7 +183,9 @@ public class ITGlueService {
                 .header("Content-Type", "application/vnd.api+json")
                 .GET()
                 .build();
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString());
+        return response.body();
     }
 
     private String post(String path, String body) throws Exception {
@@ -193,7 +195,14 @@ public class ITGlueService {
                 .header("Content-Type", "application/vnd.api+json")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString());
+        System.out.println("=== ITGlue POST " + path
+                + " → " + response.statusCode());
+        if (response.statusCode() >= 400) {
+            System.err.println("=== ITGlue POST error body: " + response.body());
+        }
+        return response.body();
     }
 
     private void patch(String path, String body) throws Exception {
@@ -203,6 +212,13 @@ public class ITGlueService {
                 .header("Content-Type", "application/vnd.api+json")
                 .method("PATCH", HttpRequest.BodyPublishers.ofString(body))
                 .build();
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString());
+        System.out.println("=== ITGlue PATCH " + path
+                + " → " + response.statusCode());
+        if (response.statusCode() >= 400) {
+            System.err.println("=== ITGlue PATCH error body: " + response.body());
+            System.err.println("=== ITGlue PATCH request body: " + body);
+        }
     }
 }
