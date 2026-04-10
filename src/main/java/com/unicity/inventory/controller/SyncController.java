@@ -63,4 +63,38 @@ public class SyncController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @PostMapping("/jumpcloud/full")
+    public ResponseEntity<String> syncAllToJumpCloud() {
+        List<Activo> activos = activoRepository.findAll().stream()
+                .filter(a -> a.getCategoria() != null && (
+                        a.getCategoria().getNombreCategoria().toLowerCase().contains("portatil") ||
+                                a.getCategoria().getNombreCategoria().toLowerCase().contains("computador") ||
+                                a.getCategoria().getNombreCategoria().toLowerCase().contains("all in one")
+                ))
+                .collect(java.util.stream.Collectors.toList());
+
+        System.out.println("=== Iniciando sync masivo JumpCloud para "
+                + activos.size() + " dispositivos ===");
+
+        AtomicInteger sincronizados = new AtomicInteger(0);
+        AtomicInteger errores = new AtomicInteger(0);
+
+        for (Activo activo : activos) {
+            try {
+                syncService.syncActivo(activo);
+                sincronizados.incrementAndGet();
+                System.out.println("✓ " + sincronizados.get() + "/"
+                        + activos.size() + " - " + activo.getEtiquetaInventario());
+                Thread.sleep(500);
+            } catch (Exception e) {
+                errores.incrementAndGet();
+                System.err.println("✗ Error: " + activo.getIdEquipo()
+                        + " - " + e.getMessage());
+            }
+        }
+
+        return ResponseEntity.ok("Sync JumpCloud completado. Sincronizados: "
+                + sincronizados.get() + ", Errores: " + errores.get());
+    }
 }
