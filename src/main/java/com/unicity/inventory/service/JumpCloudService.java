@@ -90,9 +90,21 @@ public class JumpCloudService {
     // ✅ Actualiza el displayName de un sistema
     public boolean updateSystem(String jumpcloudId, String displayName) {
         try {
+            System.out.println("=== Actualizando JumpCloud ID: " + jumpcloudId
+                    + " con nombre: " + displayName);
             String body = "{\"displayName\":\"" + displayName + "\"}";
-            put("/api/systems/" + jumpcloudId, body);
-            return true;
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/systems/" + jumpcloudId))
+                    .header("Authorization", "Bearer " + getToken())
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+            System.out.println("=== Respuesta JumpCloud update: "
+                    + response.statusCode() + " - " + response.body());
+            return response.statusCode() == 200;
         } catch (Exception e) {
             System.err.println("Error actualizando sistema JumpCloud "
                     + jumpcloudId + ": " + e.getMessage());
