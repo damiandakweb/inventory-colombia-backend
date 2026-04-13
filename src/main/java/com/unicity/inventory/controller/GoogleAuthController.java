@@ -56,23 +56,24 @@ public class GoogleAuthController {
                         .body(Map.of("error", "Token de Google inválido."));
             }
 
+            // 2. Extraer email del token
             GoogleIdToken.Payload payload = idToken.getPayload();
             String email = payload.getEmail().toLowerCase().trim();
             String nombre = (String) payload.get("name");
 
-            // 2. Verificar acceso — solo admin. o rol ALMACENISTA
-            boolean esAdmin = email.startsWith("admin.");
+            // 3. Validar acceso — admin.nombre@unicity.com O rol ALMACENISTA
+            boolean emailValido = email.matches("^admin\\..+@unicity\\.com$");
             Optional<Usuario> usuarioBD = usuarioRepository.findByEmail(email);
             boolean tieneRolPermitido = usuarioBD.isPresent() &&
                     usuarioBD.get().getRol().equalsIgnoreCase("ALMACENISTA");
 
-            if (!esAdmin && !tieneRolPermitido) {
+            if (!emailValido && !tieneRolPermitido) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error",
-                                "Acceso denegado. Solo cuentas autorizadas pueden ingresar."));
+                                "Acceso denegado. Solo cuentas admin.nombre@unicity.com pueden ingresar."));
             }
 
-            // 3. Buscar o crear el usuario
+            // 4. Buscar o crear el usuario
             Usuario usuario = usuarioBD.orElseGet(() -> {
                 Usuario nuevo = new Usuario();
                 nuevo.setEmail(email);
@@ -83,7 +84,7 @@ public class GoogleAuthController {
                 return usuarioRepository.save(nuevo);
             });
 
-            // 4. Generar JWT propio
+            // 5. Generar JWT propio
             String jwt = jwtUtils.generateJwtToken(usuario.getEmail());
             UsuarioDto usuarioDto = usuarioMapping.usuarioDto(usuario);
 

@@ -28,23 +28,31 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public UsuarioDto createUser(UsuarioDto usuarioDto) {
-        // 1. VALIDACIÓN: Verificar si el email ya está en uso.
         if (usuarioRepository.existsByEmail(usuarioDto.getEmail())) {
-            throw new IllegalStateException("El correo electrónico '" + usuarioDto.getEmail() + "' ya está registrado.");
+            throw new IllegalStateException("El correo electrónico '"
+                    + usuarioDto.getEmail() + "' ya está registrado.");
         }
 
-        // 2. LÓGICA DE NEGOCIO: Mapear, encriptar y asignar rol.
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setNombre(usuarioDto.getNombre());
         nuevoUsuario.setEmail(usuarioDto.getEmail());
-        nuevoUsuario.setPassword(passwordEncoder.encode(usuarioDto.getPassword()));
-        nuevoUsuario.setRol("USUARIO"); // Rol por defecto
 
-        // 3. PERSISTENCIA: Guardar en la base de datos.
+        // ✅ Rol viene del DTO, por defecto USUARIO
+        String rol = (usuarioDto.getRol() != null && !usuarioDto.getRol().isBlank())
+                ? usuarioDto.getRol().toUpperCase()
+                : "USUARIO";
+        nuevoUsuario.setRol(rol);
+
+        // ✅ Contraseña solo para ALMACENISTA
+        if (rol.equals("ALMACENISTA") && usuarioDto.getPassword() != null
+                && !usuarioDto.getPassword().isBlank()) {
+            nuevoUsuario.setPassword(passwordEncoder.encode(usuarioDto.getPassword()));
+        } else {
+            nuevoUsuario.setPassword("");
+        }
+
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
-
-        // 4. RESPUESTA: Devolver el DTO del usuario recién creado.
-        return usuarioMapping.usuarioDto(usuarioGuardado); // Asegúrate que el método se llame así en tu mapper
+        return usuarioMapping.usuarioDto(usuarioGuardado);
     }
 
     @Override
