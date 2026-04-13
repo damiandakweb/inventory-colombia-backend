@@ -37,7 +37,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Solo login es público
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/google").permitAll()
+
 
                         // Script externo puede crear solicitudes sin token
                         .requestMatchers(HttpMethod.POST, "/api/solicitudes").permitAll()
